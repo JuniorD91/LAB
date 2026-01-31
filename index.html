@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina — Inteligência Financeira</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { 
+            --bg: #f5f5f7; 
+            --card: rgba(255,255,255,0.85); 
+            --text: #1d1d1f; 
+            --sec: #86868b; 
+            --acc: #0071e3; 
+            --glass: blur(25px) saturate(180%);
+            --grad: linear-gradient(135deg, #0071e3 0%, #40a9ff 100%);
+            --profit: #28a745;
+        }
+        [data-theme="dark"] { 
+            --bg: #000; 
+            --card: rgba(28,28,30,0.85); 
+            --text: #f5f5f7; 
+            --sec: #86868b; 
+        }
+        
+        * { box-sizing: border-box; transition: background 0.3s, color 0.3s; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        .sticky { 
+            position: sticky; top: 0; z-index: 100; background: var(--card); 
+            backdrop-filter: var(--glass); display: none; width: 100vw; padding: 12px 20px; 
+            border-bottom: 1px solid rgba(0,0,0,0.08); justify-content: center; gap: 40px; 
+            animation: slideDown 0.4s ease;
+        }
+        .sticky div { text-align: center; font-size: 10px; text-transform: uppercase; color: var(--sec); font-weight: 700; letter-spacing: 0.5px; }
+        .sticky strong { display: block; font-size: 15px; color: var(--acc); }
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+
+        .wrapper { width: 100%; max-width: 1000px; margin-top: 40px; }
+        
+        header { text-align: center; margin-bottom: 50px; }
+        .logo { 
+            font-size: 44px; font-weight: 700; letter-spacing: -2px; 
+            background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
+        .tagline { color: var(--sec); font-size: 14px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; margin-top: 5px; }
+
+        .glass-card { 
+            background: var(--card); backdrop-filter: var(--glass); border-radius: 28px; 
+            padding: 40px; border: 1px solid rgba(0,0,0,0.05); 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05); margin-bottom: 30px; 
+        }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 32px; }
+        
+        /* Tooltip Container */
+        .tip-container { position: relative; display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+        label { font-size: 11px; font-weight: 600; color: var(--sec); text-transform: uppercase; margin: 0; }
+        
+        .info-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 14px; height: 14px; border-radius: 50%; border: 1.2px solid var(--sec);
+            font-size: 10px; cursor: help; color: var(--sec); font-style: normal;
+        }
+        
+        .info-box {
+            position: absolute; bottom: 120%; left: 0; 
+            background: #1d1d1f; color: #fff; padding: 12px; border-radius: 12px;
+            width: 240px; font-size: 11px; line-height: 1.5; font-weight: 400;
+            visibility: hidden; opacity: 0; transition: 0.2s ease; z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            pointer-events: none;
+        }
+        
+        .tip-container:hover .info-box, .stat:hover .info-box { visibility: visible; opacity: 1; bottom: 130%; }
+        [data-theme="dark"] .info-box { background: #333; }
+
+        input[type="text"], input[type="number"] { 
+            width: 100%; padding: 14px; border-radius: 14px; border: none; 
+            background: rgba(0,0,0,0.04); color: var(--text); font-size: 17px; font-weight: 500;
+        }
+        input[type="range"] { width: 100%; accent-color: var(--acc); cursor: pointer; margin-top: 12px; height: 5px; }
+        [data-theme="dark"] input:not([type="range"]) { background: rgba(255,255,255,0.08); }
+
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 40px; }
+        .stat { background: rgba(0,0,0,0.02); padding: 20px; border-radius: 22px; border: 1px solid rgba(0,0,0,0.02); position: relative; }
+        .stat.highlight { border: 1px solid var(--acc); background: rgba(0,113,227,0.03); }
+        .stat.profit { border: 1px solid var(--profit); background: rgba(40, 167, 69, 0.03); }
+        .stat span { font-size: 11px; color: var(--sec); display: flex; align-items: center; gap: 5px; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
+        .stat strong { font-size: 20px; font-weight: 700; letter-spacing: -0.8px; }
+
+        .chart-container { height: 420px; margin-top: 40px; }
+
+        .toggle { 
+            position: fixed; top: 20px; right: 20px; cursor: pointer; font-size: 20px; z-index: 101; 
+            background: var(--card); width: 45px; height: 45px; display: flex; align-items: center; 
+            justify-content: center; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+        }
+        
+        .table-card { padding: 0; overflow: hidden; border-radius: 24px; background: var(--card); border: 1px solid rgba(0,0,0,0.05); margin-bottom: 50px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { text-align: left; padding: 18px; color: var(--sec); border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 11px; text-transform: uppercase; }
+        td { padding: 18px; border-bottom: 1px solid rgba(0,0,0,0.02); }
+    </style>
+</head>
+<body data-theme="light">
+
+    <div class="sticky" id="stk">
+        <div>Patrimônio Bruto<strong id="stk1">R$ 0</strong></div>
+        <div>Total em Juros<strong id="stkj" style="color:var(--profit)">R$ 0</strong></div>
+        <div>Renda Estimada<strong id="stk4" style="color:var(--acc)">R$ 0</strong></div>
+    </div>
+
+    <div class="toggle" onclick="tgl()">🌙</div>
+
+    <div class="wrapper">
+        <header>
+            <h1 class="logo">Lumina</h1>
+            <p class="tagline">Inteligência Financeira</p>
+        </header>
+
+        <div class="glass-card">
+            <div class="grid">
+                <div>
+                    <div class="tip-container">
+                        <label>Aporte Inicial</label>
+                        <i class="info-icon">i</i>
+                        <div class="info-box">O valor que você já tem disponível para começar o investimento hoje.</div>
+                    </div>
+                    <input type="text" id="vI" value="R$ 50.000,00">
+                    <input type="range" id="sI" min="0" max="1000000" step="5000" value="50000">
+                </div>
+                <div>
+                    <div class="tip-container">
+                        <label>Aporte Mensal</label>
+                        <i class="info-icon">i</i>
+                        <div class="info-box">Quanto você pretende poupar e investir todos os meses.</div>
+                    </div>
+                    <input type="text" id="vM" value="R$ 2.000,00">
+                    <input type="range" id="sM" min="0" max="50000" step="100" value="2000">
+                </div>
+                <div>
+                    <div class="tip-container">
+                        <label>Juros Anuais (%)</label>
+                        <i class="info-icon">i</i>
+                        <div class="info-box">A rentabilidade anual estimada da sua carteira (ex: Selic, CDB, Ações).</div>
+                    </div>
+                    <input type="number" id="jA" value="11.5" step="0.1">
+                    <input type="range" id="sJ" min="0" max="30" step="0.1" value="11.5">
+                </div>
+                <div>
+                    <div class="tip-container">
+                        <label>Inflação Estimada (%)</label>
+                        <i class="info-icon">i</i>
+                        <div class="info-box">Estimativa de aumento de preços (IPCA). Usado para calcular o poder de compra futuro.</div>
+                    </div>
+                    <input type="number" id="inf" value="4.5" step="0.1">
+                    <input type="range" id="sInf" min="0" max="15" step="0.1" value="4.5">
+                </div>
+                <div>
+                    <div class="tip-container">
+                        <label>Período (Anos)</label>
+                        <i class="info-icon">i</i>
+                        <div class="info-box">O tempo total que você deixará o dinheiro rendendo.</div>
+                    </div>
+                    <input type="number" id="tV" value="20">
+                    <input type="range" id="sT" min="1" max="50" step="1" value="20">
+                </div>
+            </div>
+
+            <div class="summary">
+                <div class="stat">
+                    <span>Patrimônio Bruto <i class="info-icon">i</i></span>
+                    <div class="info-box">Soma total de tudo que você investiu mais os juros, sem descontar impostos ou inflação.</div>
+                    <strong id="r1"></strong>
+                </div>
+                <div class="stat profit">
+                    <span>Total em Juros <i class="info-icon">i</i></span>
+                    <div class="info-box">O lucro gerado pelo seu dinheiro. É a diferença entre o saldo final e o que você aportou.</div>
+                    <strong id="rj" style="color:var(--profit)"></strong>
+                </div>
+                <div class="stat">
+                    <span>Poder de Compra <i class="info-icon">i</i></span>
+                    <div class="info-box">O valor real do seu patrimônio corrigido pela inflação, ou seja, o que ele valeria em dinheiro de hoje.</div>
+                    <strong id="r2" style="color:#ff9500"></strong>
+                </div>
+                <div class="stat highlight">
+                    <span>Renda Mensal Real <i class="info-icon">i</i></span>
+                    <div class="info-box">Quanto você poderia sacar por mês (estimativa de 0,5%) mantendo o seu patrimônio real.</div>
+                    <strong id="r4" style="color:var(--acc)"></strong>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="myChart"></canvas>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <table id="tbl">
+                <thead><tr><th>Data</th><th>Total Investido</th><th>Juros Acumulados</th><th>Saldo Bruto</th></tr></thead>
+                <tbody id="body"></tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+    let myChart;
+    const fmt = v => v.toLocaleString('pt-br', { style: 'currency', currency: 'BRL' });
+    const pVal = i => parseFloat(document.getElementById(i).value.replace(/\D/g, '')) / 100 || 0;
+
+    const tgl = () => {
+        const b = document.body;
+        const isL = b.getAttribute('data-theme') === 'light';
+        b.setAttribute('data-theme', isL ? 'dark' : 'light');
+        document.querySelector('.toggle').innerText = isL ? '☀️' : '🌙';
+        calc();
+    };
+
+    const sync = (sId, vId, type) => {
+        const slider = document.getElementById(sId), input = document.getElementById(vId);
+        slider.oninput = () => { 
+            input.value = (type === 'money') ? fmt(parseFloat(slider.value)) : slider.value; 
+            calc(); 
+        };
+        input.oninput = () => { 
+            let val = (type === 'money') ? pVal(vId) : parseFloat(input.value);
+            slider.value = isNaN(val) ? 0 : val;
+            if(type === 'money') input.value = fmt(val);
+            calc();
+        };
+    };
+
+    sync('sI', 'vI', 'money'); sync('sM', 'vM', 'money');
+    sync('sJ', 'jA', 'num');   sync('sInf', 'inf', 'num'); sync('sT', 'tV', 'num');
+
+    window.onscroll = () => {
+        const s = document.getElementById('stk');
+        s.style.display = window.pageYOffset > 500 ? 'flex' : 'none';
+    };
+
+    function getDateObj(mesesAdicionais) {
+        const d = new Date();
+        d.setMonth(d.getMonth() + mesesAdicionais);
+        return {
+            mes: d.toLocaleString('pt-BR', { month: 'long' }),
+            ano: d.getFullYear()
+        };
+    }
+
+    function calc() {
+        const p = pVal('vI'), a = pVal('vM'), j = parseFloat(document.getElementById('jA').value) || 0;
+        const infla = parseFloat(document.getElementById('inf').value) || 0;
+        const tAnos = parseInt(document.getElementById('tV').value) || 0;
+        
+        const m = tAnos * 12;
+        const jM = Math.pow(1 + j/100, 1/12) - 1;
+        const infM = Math.pow(1 + infla/100, 1/12) - 1;
+
+        let labels = [], fullLabels = [], dataInvest = [], dataTotal = [], dataReal = [], h = '', s = p, iAc = p, sReal = p;
+
+        for (let i = 0; i <= m; i++) {
+            if (i > 0) {
+                s += (s * jM) + a;
+                sReal += (sReal * (jM - infM)) + a;
+                iAc += a;
+            }
+            
+            if (i % 12 === 0 || i === m) {
+                const date = getDateObj(i);
+                labels.push(date.ano); 
+                fullLabels.push(`${date.mes.charAt(0).toUpperCase() + date.mes.slice(1)} (${date.ano})`);
+                
+                dataInvest.push(iAc);
+                dataTotal.push(s);
+                dataReal.push(sReal);
+                
+                if(i > 0) h += `<tr><td>${date.mes.charAt(0).toUpperCase() + date.mes.slice(1)}/${date.ano}</td><td>${fmt(iAc)}</td><td style="color:var(--profit)">${fmt(s-iAc)}</td><td><strong>${fmt(s)}</strong></td></tr>`;
+            }
+        }
+
+        const totalJuros = s - iAc;
+        const rendaReal = sReal * 0.005;
+
+        document.getElementById('r1').innerText = fmt(s);
+        document.getElementById('stk1').innerText = fmt(s);
+        document.getElementById('rj').innerText = fmt(totalJuros);
+        document.getElementById('stkj').innerText = fmt(totalJuros);
+        document.getElementById('r2').innerText = fmt(sReal);
+        document.getElementById('r4').innerText = fmt(rendaReal);
+        document.getElementById('stk4').innerText = fmt(rendaReal);
+        document.getElementById('body').innerHTML = h;
+
+        updateChart(labels, fullLabels, dataTotal, dataInvest, dataReal);
+    }
+
+    function updateChart(labels, fullLabels, total, invest, real) {
+        if (myChart) myChart.destroy();
+        const isDark = document.body.getAttribute('data-theme') === 'dark';
+        const ctx = document.getElementById('myChart').getContext('2d');
+        
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Saldo Bruto', data: total, borderColor: '#0071e3', backgroundColor: 'rgba(0,113,227,0.1)', fill: true, tension: 0.4, pointRadius: 2, pointHoverRadius: 6 },
+                    { label: 'Poder de Compra', data: real, borderColor: '#ff9500', borderDash: [5,5], fill: false, tension: 0.4, pointRadius: 0, pointHoverRadius: 6 },
+                    { label: 'Total Investido', data: invest, borderColor: isDark ? '#444' : '#ccc', fill: false, tension: 0, pointRadius: 0, pointHoverRadius: 6 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: { 
+                    legend: { display: true, position: 'bottom', labels: { color: isDark ? '#fff' : '#000', usePointStyle: true, padding: 20 } },
+                    tooltip: {
+                        backgroundColor: isDark ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                        titleColor: isDark ? '#fff' : '#1d1d1f',
+                        bodyColor: isDark ? '#eee' : '#1d1d1f',
+                        borderColor: 'rgba(0,0,0,0.1)',
+                        borderWidth: 1, padding: 12, cornerRadius: 10,
+                        callbacks: {
+                            title: (items) => fullLabels[items[0].dataIndex],
+                            label: context => context.dataset.label + ': ' + fmt(context.parsed.y)
+                        }
+                    }
+                },
+                scales: {
+                    y: { 
+                        grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }, 
+                        ticks: { color: '#86868b', font: { size: 11 }, callback: v => 'R$' + (v/1000).toFixed(0) + 'k' } 
+                    },
+                    x: { 
+                        grid: { display: false }, 
+                        ticks: { 
+                            color: '#86868b', 
+                            font: { size: 10, weight: '500' },
+                            autoSkip: false, 
+                            maxRotation: 45,
+                            minRotation: 45
+                        } 
+                    }
+                }
+            }
+        });
+    }
+
+    window.onload = calc;
+</script>
+</body>
+</html>
